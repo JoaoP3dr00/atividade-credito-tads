@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -88,5 +90,20 @@ class FullChainIntegrationTest {
 
         // Verify rate limiting - at least 1 second between API calls
         assertTrue(elapsedTime >= 1, "Rate limit not enforced");
+    }
+
+    @Test
+    void shouldWorkWithMultipleCpfs() {
+        List<String> cpfList = CpfGenerator.generateCpfList(5);
+        for (String cpf : cpfList) {
+            System.out.println("Gerado CPF de teste: " + cpf);
+            when(restTemplate.exchange(
+                    eq("https://score.hsborges.dev/api/score?cpf=" + cpf),
+                    eq(HttpMethod.GET), any(), eq(Integer.class)))
+                    .thenReturn(new ResponseEntity<>(700, HttpStatus.OK));
+
+            int score = apiClient.getScore(cpf);
+            assertEquals(700, score);
+        }
     }
 }
